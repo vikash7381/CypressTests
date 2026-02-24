@@ -1,0 +1,79 @@
+name: Complete Cypress Test Suite
+
+on:
+  # Regular triggers
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  # Scheduled runs
+  schedule:
+    - cron: "0 20 * * *" # Daily smoke tests at 2 AM
+    - cron: "0 10 * * 1" # Monday 10 AM - full regression
+    - cron: "0 15 1 * *" # Monthly on 1st at 3 PM
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Test environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log schedule info
+        run: |
+          echo "Triggered by: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Environment: ${{ github.event.inputs.environment || 'production' }}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Cypress tests
+        id: cypress # ✅ ADDED: This ID is needed for the Slack step to reference
+        uses: cypress-io/github-action@v6
+        with:
+          config: baseUrl=https://automationexercise.com
+          browser: chrome
+        continue-on-error: true # ✅ ADDED: Continue even if tests fail so we can send notifications
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.run_id }}
+          path: |
+            cypress/screenshots
+            cypress/videos
+
+      - name: Send Slack notification if failed
+        if: steps.cypress.outcome == 'failure' # ✅ Now this works because we added 'id: cypress' above
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "❌ Cypress tests FAILED! Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Fail workflow if tests failed
+        if: steps.cypress.outcome == 'failure'
+        run: exit 1
