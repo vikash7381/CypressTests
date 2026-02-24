@@ -1,4 +1,4 @@
-describe("API tests", () => {
+describe("API tests for search product", () => {
   it("Scenario: Product search Tshirt", () => {
     cy.request({
       method: "POST",
