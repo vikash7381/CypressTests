@@ -1,0 +1,6 @@
+{
+  "validLogin": {
+    "email": "Cypress_test_user@gmail.com",
+    "password": "Cypress_test_password"
+  }
+}
