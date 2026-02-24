@@ -9,7 +9,7 @@ on:
 
   # Scheduled runs
   schedule:
-    - cron: "0 20 * * *" # Daily smoke tests at 8 AM
+    - cron: "0 20 * * *" # Daily smoke tests at 8 PM
     - cron: "0 10 * * 1" # Monday 10 AM - full regression
     - cron: "0 15 1 * *" # Monthly on 1st at 3 PM
 
